@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>科学计算器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#1a1a2e;font-family:'Segoe UI',sans-serif}
+.calc{background:#16213e;border-radius:24px;padding:24px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.display{background:#0f3460;border-radius:16px;padding:20px 24px;margin-bottom:18px;min-height:100px;text-align:right}
+.display .expr{font-size:15px;color:#7ec8e3;min-height:22px;word-break:break-all;opacity:.7;margin-bottom:2px}
+.display .res{font-size:38px;color:#fff;font-weight:300;word-break:break-all}
+.display .res.sm{font-size:26px}
+.r{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.r:last-child{margin:0}
+.btn{height:56px;border:none;border-radius:12px;font-size:20px;cursor:pointer;transition:.1s;font-weight:500}
+.btn:active{transform:scale(.93)}
+.nm{background:#1a2a4a;color:#fff}.nm:hover{background:#253b63}
+.op{background:#0f3460;color:#7ec8e3}.op:hover{background:#164a7a}
+.eq{background:#e94560;color:#fff}.eq:hover{background:#d63851}
+.cl{background:#533483;color:#fff}.cl:hover{background:#6a44a0}
+.fn{background:#1a2a4a;color:#f5a623;border:1px solid rgba(245,166,35,.2)}.fn:hover{background:#253b63}
+.z2{grid-column:span 2}
+.hb{background:none;border:none;color:#555;font-size:12px;cursor:pointer;position:absolute;top:8px;left:12px;padding:4px 8px;border-radius:6px}
+.hb:hover{color:#888}
+.hp{display:none;position:fixed;top:0;right:0;bottom:0;width:300px;background:#16213e;z-index:100;padding:20px;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,.3)}
+.hp.on{display:block}
+.ov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99}
+.ov.on{display:block}
+</style>
+</head>
+<body>
+<div class="calc">
+<div class="display" style="position:relative">
+<button class="hb" onclick="th()">📋</button>
+<div class="expr" id="ex"></div>
+<div class="res" id="res">0</div>
+</div>
+<div class="r"><button class="btn cl" onclick="c()">AC</button><button class="btn fn" onclick="sq()">√</button><button class="btn fn" onclick="sq2()">x²</button><button class="btn op" onclick="o('÷')">÷</button></div>
+<div class="r"><button class="btn nm" onclick="n('7')">7</button><button class="btn nm" onclick="n('8')">8</button><button class="btn nm" onclick="n('9')">9</button><button class="btn op" onclick="o('×')">×</button></div>
+<div class="r"><button class="btn nm" onclick="n('4')">4</button><button class="btn nm" onclick="n('5')">5</button><button class="btn nm" onclick="n('6')">6</button><button class="btn op" onclick="o('−')">−</button></div>
+<div class="r"><button class="btn nm" onclick="n('1')">1</button><button class="btn nm" onclick="n('2')">2</button><button class="btn nm" onclick="n('3')">3</button><button class="btn op" onclick="o('+')">+</button></div>
+<div class="r"><button class="btn fn" onclick="nd()">.</button><button class="btn nm z2" onclick="n('0')">0</button><button class="btn fn" onclick="bs()">⌫</button><button class="btn eq" onclick="eq()">=</button></div>
+<div class="r"><button class="btn fn" onclick="ng()">±</button><button class="btn fn" onclick="pi()">π</button><button class="btn fn" onclick="pc()">%</button><button class="btn fn" onclick="rc()">1/x</button></div>
+<div style="text-align:center;color:#444;font-size:11px;margin-top:12px">科学计算器 · 键盘可用</div>
+</div>
+<div class="ov" id="ov" onclick="th()"></div>
+<div class="hp" id="hp"><button style="background:none;border:none;color:#888;font-size:20px;float:right;cursor:pointer" onclick="th()">×</button><h3 style="color:#7ec8e3;font-size:16px;margin-bottom:12px">计算记录</h3><div id="hl"></div><button style="width:100%;padding:8px;border:none;border-radius:8px;background:#533483;color:#fff;margin-top:10px;cursor:pointer;font-size:12px" onclick="ch()">清空</button></div>
+<script>
+var e='',r='0',jc=false,h=JSON.parse(localStorage.getItem('ch')||'[]');
+function u(){var el=document.getElementById('ex'),rl=document.getElementById('res');
+  el.textContent=e.replace(/\*/g,'×').replace(/\//g,'÷').replace(/\-/g,'−');
+  rl.textContent=r;rl.classList.toggle('sm',r.length>10);
+}
+function n(v){if(jc){e='';r='0';jc=false}e+=v;u()}
+function nd(){var p=e.split(/[\+\-\*\/\(\)]/);if(p[p.length-1].includes('.'))return;n('.')}
+function o(v){var m={'+':'+','−':'-','×':'*','÷':'/'};if(jc){e=r;jc=false}e+=m[v]||v;u()}
+function bs(){if(jc){e='';r='0';jc=false;u();return}e=e.slice(0,-1);u()}
+function c(){e='';r='0';u()}
+
+// === Square Root - Fixed ===
+function sq() {
+  // If there's a number, take sqrt of it immediately
+  if (e) {
+    // Try to evaluate current expression first, then sqrt it
+    try {
+      var val = eval(e);
+      if (isFinite(val) && val >= 0) {
+        var sqval = Math.sqrt(val);
+        r = Number.isInteger(sqval) ? String(sqval) : parseFloat(sqval.toFixed(10)).toString();
+        e = r;
+        jc = true;
+        u();
+        return;
+      }
+    } catch(ex) {}
+    // If eval fails, wrap the expression
+    e = 'Math.sqrt(' + e + ')';
+    eq();
+  } else {
+    // No expression, sqrt of displayed result
+    try {
+      var v = parseFloat(r);
+      if (v >= 0) {
+        var sv = Math.sqrt(v);
+        r = Number.isInteger(sv) ? String(sv) : parseFloat(sv.toFixed(10)).toString();
+        e = r;
+        jc = true;
+        u();
+      } else {
+        r = 'Error';
+        u();
+      }
+    } catch(ex) { r = 'Error'; u(); }
+  }
+}
+
+function sq2() {
+  if (e) {
+    try {
+      var val = eval(e);
+      var sqv = val * val;
+      r = Number.isInteger(sqv) ? String(sqv) : parseFloat(sqv.toFixed(10)).toString();
+      e = r;
+      jc = true;
+      u();
+    } catch(ex) { e = '(' + e + ')**2'; eq(); }
+  } else {
+    var v = parseFloat(r);
+    var sv = v * v;
+    r = Number.isInteger(sv) ? String(sv) : parseFloat(sv.toFixed(10)).toString();
+    e = r; jc = true; u();
+  }
+}
+
+function ng() {
+  if (e) {
+    if (e.startsWith('-')) e = e.slice(1);
+    else e = '-' + e;
+    u();
+  } else {
+    r = String(-parseFloat(r));
+    u();
+  }
+}
+
+function pi() {
+  if (jc) { e = ''; jc = false; }
+  e += String(Math.PI);
+  u();
+}
+
+function pc() {
+  if (e) { e += '/100'; eq(); }
+}
+
+function rc() {
+  if (e) { e = '1/(' + e + ')'; eq(); }
+  else { r = String(1 / parseFloat(r)); e = r; jc = true; u(); }
+}
+
+function eq() {
+  if (!e) return;
+  try {
+    var s = e;
+    // Close parentheses
+    var op = (s.match(/\(/g)||[]).length;
+    var cp = (s.match(/\)/g)||[]).length;
+    while (cp < op) { s += ')'; cp++; }
+    
+    var val = new Function('return ' + s)();
+    if (!isFinite(val)) { r = 'Error'; u(); return; }
+    var fmt = Number.isInteger(val) ? String(val) : parseFloat(val.toFixed(10)).toString();
+    addH(e, fmt);
+    e = fmt; r = fmt; jc = true; u();
+  } catch(ex) { r = 'Error'; u(); }
+}
+
+// Keyboard
+document.addEventListener('keydown',function(e){
+  if(e.key>='0'&&e.key<='9')n(e.key);
+  else if(e.key==='.')nd();
+  else if(e.key==='+')o('+');
+  else if(e.key==='-')o('−');
+  else if(e.key==='*')o('×');
+  else if(e.key==='/')o('÷');
+  else if(e.key==='Enter'||e.key==='='){e.preventDefault();eq()}
+  else if(e.key==='Backspace')bs();
+  else if(e.key==='Escape')c();
+  else if(e.key==='r'||e.key==='R')sq();
+});
+
+function addH(ex,res){
+  var t=new Date().toLocaleTimeString('zh-CN');
+  h.unshift({ex:ex,res:res,time:t});
+  if(h.length>50)h.pop();
+  localStorage.setItem('ch',JSON.stringify(h));
+  rh();
+}
+function rh(){
+  var el=document.getElementById('hl');
+  if(!h.length){el.innerHTML='<div style="color:#555;text-align:center;padding:20px;font-size:13px">暂无记录</div>';return}
+  el.innerHTML=h.map(function(x){return '<div style="padding:8px 0;border-bottom:1px solid #1a2a4a"><div style="color:#7ec8e3;font-size:12px">'+x.ex.replace(/\*/g,'×').replace(/\//g,'÷')+'</div><div style="color:#fff;font-size:15px">= '+x.res+'</div><div style="color:#555;font-size:10px">'+x.time+'</div></div>'}).join('');
+}
+function th(){document.getElementById('hp').classList.toggle('on');document.getElementById('ov').classList.toggle('on');rh()}
+function ch(){h=[];localStorage.setItem('ch',JSON.stringify(h));rh()}
+u();rh();
+</script>
+</body>
+</html>
